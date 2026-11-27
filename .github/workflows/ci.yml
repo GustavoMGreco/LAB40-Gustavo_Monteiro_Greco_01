@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run test:smoke
+      - run: npm audit --audit-level=high
+      - run: docker build --pull -t lab40:feature01 .
+      - name: Test container
+        run: |
+          docker run -d --name lab40-ci -p 3000:3000 lab40:feature01
+          sleep 2
+          curl --fail http://localhost:3000/health
+          curl --fail -X POST http://localhost:3000/api/features/1 -H "Content-Type: application/json" -d '{"valor":200,"percentual":15}'
+      - name: Cleanup container
+        if: always()
+        run: docker rm -f lab40-ci || true
+      - run: docker save lab40:feature01 -o lab40-feature01.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lab40-feature01-image
+          path: lab40-feature01.tar

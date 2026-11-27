@@ -1,0 +1,25 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  cd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --pull -t lab40:feature01 .
+      - run: docker save lab40:feature01 -o lab40-feature01.tar
+      - name: Gerar deployment-record.txt
+        run: |
+          echo "repository=${GITHUB_REPOSITORY}" > deployment-record.txt
+          echo "ref=${GITHUB_REF}" >> deployment-record.txt
+          echo "sha=${GITHUB_SHA}" >> deployment-record.txt
+          echo "tag=lab40:feature01" >> deployment-record.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lab40-delivery-record
+          path: |
+            lab40-feature01.tar
+            deployment-record.txt
